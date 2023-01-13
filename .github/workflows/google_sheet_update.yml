@@ -24,14 +24,18 @@ jobs:
         # and that there are no duplicates. If there are any errors, set the output to
         # an empty string, which will cause the workflow to fail.
         run: |
-          echo ${{ steps.files.outputs.added }} | \
-          jq -r '.[]' | \
-          grep -E '^deliveries/[^/]+\.md$' | \
-          sort | \
-          uniq -c | \
-          grep -v '^ *1 ' | \
-          wc -l | \
-          xargs -I {} test {} -eq 0 || echo '[]' > ${{ steps.files.outputs.added }}
+          echo "Checking filenames format"
+          echo "${{ steps.files.outputs.added }}"
+          echo "${{ steps.files.outputs.added }}" | jq -r '.[]' | while read -r filename; do
+            if [[ $filename =~ ^deliveries/[^/]+\.md$ ]] || [[ $filename =~ ^maintenance_deliveries/[^/]+\.md$ ]]; then
+              echo "Filename $filename is valid"
+            else
+              echo "Filename $filename is invalid"
+              echo "::set-output name=filenames::[]"
+              exit 1
+            fi
+          done
+          echo "::set-output name=filenames::${{ steps.files.outputs.added }}"
 
   check-no-success:
     needs: get-delivery-files
