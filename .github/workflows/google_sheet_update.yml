@@ -18,6 +18,20 @@ jobs:
           filter: |
             deliveries/*.md
             maintenance_deliveries/*.md
+      - name: Check filenames format
+        id: check
+        # check that filenames start with deliveries/, has only one /, and ends with .md
+        # and that there are no duplicates. If there are any errors, set the output to
+        # an empty string, which will cause the workflow to fail.
+        run: |
+          echo ${{ steps.files.outputs.added }} | \
+          jq -r '.[]' | \
+          grep -E '^deliveries/[^/]+\.md$' | \
+          sort | \
+          uniq -c | \
+          grep -v '^ *1 ' | \
+          wc -l | \
+          xargs -I {} test {} -eq 0 || echo '[]' > ${{ steps.files.outputs.added }}
 
   check-no-success:
     needs: get-delivery-files
